@@ -117,48 +117,54 @@ function fatigue(now = Date.now()) { // group → { left (ms), frac (1 = just tr
 }
 const mix = (a, b, k) => { const p = c => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16)); const [x, y] = [p(a), p(b)]; return `rgb(${x.map((v, i) => Math.round(v + (y[i] - v) * k)).join(',')})`; };
 const tiredColour = f => f > 0.5 ? mix('#ff9f43', '#ff4d5e', (f - 0.5) / 0.5) : mix('#ffd166', '#ff9f43', f / 0.5);
-// a body, front and back, its muscles coloured by how tired they are (or picked, in the day builder)
-const BODY = {
+// The body: front and back of one figure that sways a little, like a 3D model; it turns around when you tap it (or the button).
+// Real muscle shapes (the whole chest, the six-pack, lats, glutes...), drawn for the left half and mirrored for the right.
+// Each muscle: its colour (tired = red to yellow, picked = white, rested = glass), a highlight that makes it look round, and a glow.
+const MUSCLES = {
   front: [
-    ['shoulders', 'e', 36, 46, 9, 8], ['shoulders', 'e', 84, 46, 9, 8],
-    ['chest', 'p', 'M40 44 Q50 37 58 41 L58 62 Q48 66 40 57 Z'], ['chest', 'p', 'M80 44 Q70 37 62 41 L62 62 Q72 66 80 57 Z'],
-    ['biceps', 'e', 31, 67, 6, 12], ['biceps', 'e', 89, 67, 6, 12],
-    ['core', 'p', 'M48 66 Q60 62 72 66 L71 104 Q60 109 49 104 Z'],
-    ['quads', 'e', 51, 146, 9.5, 26], ['quads', 'e', 69, 146, 9.5, 26],
-    ['calves', 'e', 51, 202, 6.5, 17], ['calves', 'e', 69, 202, 6.5, 17],
+    ['chest', 'path d="M100 90 L100 128 Q86 137 71 131 Q60 125 58 113 Q60 97 72 90 Q86 85 100 90 Z"'],
+    ['shoulders', 'path d="M57 114 Q47 104 50 90 Q56 79 70 82 Q62 93 60 109 Z"'],
+    ['biceps', 'ellipse cx="49" cy="140" rx="9.5" ry="22" transform="rotate(9 49 140)"'],
+    ['core', 'rect x="89" y="137" width="11" height="19" rx="4"'], ['core', 'rect x="89" y="158" width="11" height="19" rx="4"'],
+    ['core', 'rect x="89" y="179" width="11" height="20" rx="4"'], ['core', 'path d="M89 201 L100 201 L100 235 Q93 229 90 217 Z"'],
+    ['core', 'path d="M71 138 Q84 146 86 166 L86 208 Q77 214 67 208 Q65 176 71 138 Z"'],
+    ['quads', 'path d="M64 258 Q57 296 64 334 Q72 346 82 340 Q86 302 84 262 Z"'], ['quads', 'path d="M85 262 Q97 266 98 286 Q98 322 91 344 Q86 347 83 340 Q89 302 85 262 Z"'],
+    ['calves', 'path d="M71 352 Q65 376 71 398 Q77 403 81 397 Q86 376 83 352 Q77 356 71 352 Z"'],
   ],
   back: [
-    ['back', 'p', 'M47 33 L60 28 L73 33 L81 43 L60 52 L39 43 Z'],
-    ['shoulders', 'e', 36, 46, 9, 8], ['shoulders', 'e', 84, 46, 9, 8],
-    ['back', 'p', 'M42 50 L58 54 L58 84 Q48 82 44 72 Z'], ['back', 'p', 'M78 50 L62 54 L62 84 Q72 82 76 72 Z'],
-    ['triceps', 'e', 31, 67, 6, 12], ['triceps', 'e', 89, 67, 6, 12],
-    ['back', 'p', 'M50 86 L70 86 L70 104 Q60 108 50 104 Z'],
-    ['hams', 'e', 52, 117, 10, 10], ['hams', 'e', 68, 117, 10, 10],
-    ['hams', 'e', 51, 150, 9, 21], ['hams', 'e', 69, 150, 9, 21],
-    ['calves', 'e', 51, 199, 7, 16], ['calves', 'e', 69, 199, 7, 16],
+    ['back', 'path d="M100 64 L100 134 Q90 122 82 106 Q72 94 61 87 Q78 76 100 64 Z"'],
+    ['shoulders', 'path d="M58 89 Q49 99 51 116 Q60 111 69 99 Q66 89 58 89 Z"'],
+    ['back', 'path d="M69 110 Q62 140 70 176 Q82 200 95 206 L97 150 Q86 132 69 110 Z"'],
+    ['back', 'path d="M91 208 L99 208 L99 248 L89 244 Q89 226 91 208 Z"'],
+    ['triceps', 'ellipse cx="49" cy="140" rx="10" ry="23" transform="rotate(8 49 140)"'],
+    ['hams', 'path d="M100 248 L100 292 Q88 302 74 294 Q63 282 65 264 Q69 250 84 246 Z"'],
+    ['hams', 'path d="M67 298 Q64 326 71 346 Q79 354 89 346 Q96 322 96 300 Q84 306 67 298 Z"'],
+    ['calves', 'path d="M69 354 Q62 374 69 398 Q77 404 83 396 Q90 376 86 354 Q78 358 69 354 Z"'],
   ],
 };
-const SKIN = [['e', 60, 17, 11, 13], ['r', 55, 28, 10, 9], ['e', 27, 92, 5, 13], ['e', 93, 92, 5, 13], ['e', 25, 110, 4, 4.5], ['e', 95, 110, 4, 4.5],
-  ['p', 'M47 105 L73 105 L71 126 L49 126 Z'], ['e', 51, 175, 5.5, 5], ['e', 69, 175, 5.5, 5], ['e', 50, 225, 7, 4], ['e', 70, 225, 7, 4]];
-function bodySvg({ tired = {}, picked = null, clickable = false } = {}) {
-  const draw = (kind, a, b, c, d, attrs) => kind === 'e' ? `<ellipse cx="${a}" cy="${b}" rx="${c}" ry="${d}" ${attrs}/>` : kind === 'r' ? `<rect x="${a}" y="${b}" width="${c}" height="${d}" rx="3" ${attrs}/>` : `<path d="${a}" ${attrs}/>`;
-  const view = (name, ox) => {
-    const skin = SKIN.map(([k, a, b, c, d]) => draw(k, a, b, c, d, 'fill="url(#skin)"')).join('');
-    const muscles = BODY[name].map(([g, k, a, b, c, d]) => {
-      const t = tired[g], on = picked?.has(g), fill = on ? '#ffffff' : t ? tiredColour(t.frac) : 'rgba(255,255,255,.17)';
-      const glow = (on || t) ? ' filter="url(#mglow)"' : '';
-      return `<g${clickable ? ` data-act="pickGroup" data-id="${g}" style="cursor:pointer"` : ''}>${draw(k, a, b, c, d, `fill="${fill}"${glow}`)}${draw(k, a, b, c, d, 'fill="url(#shine)"')}</g>`;
-    }).join('');
-    return `<g transform="translate(${ox} 0)">${skin}${muscles}<text x="60" y="246" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff" fill-opacity=".45" letter-spacing=".08em">${name === 'front' ? 'VOOR' : 'ACHTER'}</text></g>`;
-  };
-  return `<svg class="body" viewBox="0 0 260 252" role="img" aria-label="Je lichaam, voor en achter">
-    <defs><radialGradient id="shine" cx=".32" cy=".25" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".42"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".18"/></radialGradient>
-    <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".2"/><stop offset="1" stop-color="#fff" stop-opacity=".09"/></linearGradient>
-    <filter id="mglow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-    <radialGradient id="floor" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#000" stop-opacity=".35"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient></defs>
-    <ellipse cx="60" cy="232" rx="34" ry="5" fill="url(#floor)"/><ellipse cx="200" cy="232" rx="34" ry="5" fill="url(#floor)"/>
-    ${view('front', 0)}${view('back', 140)}</svg>`;
+const SKIN_HALF = `<path d="M100 68 Q78 70 64 79 Q50 87 50 107 Q54 140 58 170 Q62 200 60 220 Q58 238 54 252 Q76 263 100 263 Z"/>
+  <line x1="58" y1="98" x2="48" y2="168" stroke-width="25"/><line x1="48" y1="168" x2="42" y2="232" stroke-width="19"/>
+  <line x1="79" y1="258" x2="79" y2="342" stroke-width="38"/><line x1="79" y1="342" x2="78" y2="402" stroke-width="25"/>
+  <ellipse cx="41" cy="247" rx="8" ry="12"/><ellipse cx="77" cy="413" rx="13" ry="6"/>`;
+let bodyBack = false;
+function bodyFace(side, { tired = {}, picked = null, clickable = false }) {
+  const half = MUSCLES[side].map(([g, el], i) => {
+    const t = tired[g], on = picked?.has(g), fill = on ? '#ffffff' : t ? tiredColour(t.frac) : 'rgba(255,255,255,.15)';
+    return `<g class="m${on ? ' picked' : t ? ' tired' : ''}" style="--i:${i}" data-g="${g}"><${el} fill="${fill}"${on || t ? ' filter="url(#gl)"' : ''}/><${el} fill="url(#sh)"/></g>`;
+  }).join('');
+  return `<svg class="face ${side}" viewBox="0 0 200 430" aria-hidden="true">
+    <defs><linearGradient id="sk" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="430"><stop offset="0" stop-color="#fff" stop-opacity=".2"/><stop offset="1" stop-color="#fff" stop-opacity=".08"/></linearGradient>
+    <radialGradient id="sh" cx=".42" cy=".22" r=".85"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#0a0828" stop-opacity=".35"/></radialGradient>
+    <filter id="gl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <radialGradient id="fl" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#000" stop-opacity=".4"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient></defs>
+    <ellipse cx="100" cy="420" rx="62" ry="8" fill="url(#fl)"/>
+    <g fill="url(#sk)" stroke="url(#sk)" stroke-linecap="round"><ellipse cx="100" cy="36" rx="18" ry="22"/><path d="M90 52 L110 52 L112 70 L88 70 Z"/>${SKIN_HALF}<g transform="translate(200 0) scale(-1 1)">${SKIN_HALF}</g></g>
+    <g stroke="rgba(14,10,50,.45)" stroke-width=".8">${half}<g transform="translate(200 0) scale(-1 1)">${half}</g></g></svg>`;
 }
+const bodyHtml = (opts = {}) => `<div class="b3d${bodyBack ? ' back' : ''}${opts.clickable ? '' : ' turnable'}"${opts.clickable ? ' data-pick="1"' : ''} role="${opts.clickable ? 'group' : 'button'}" aria-label="${opts.clickable ? 'Tik op een spier' : 'Draai het lichaam om'}"><div class="b3d-flip"><div class="b3d-sway">${bodyFace('front', opts)}${bodyFace('back', opts)}</div></div></div>`;
+const flipLabel = () => bodyBack ? 'Achterkant' : 'Voorkant';
+// a number in dots that counts up when the page opens
+const dotsCount = (v, cell, dec = 0) => `<span class="cnt" data-v="${v}" data-dec="${dec}" data-cell="${cell}">${dots(dec ? v.toFixed(dec).replace('.', ',') : String(Math.round(v)), cell)}</span>`;
 
 // ---------- numbers about you ----------
 function records() {
@@ -181,18 +187,32 @@ const planGroups = p => [...new Set(p.items.map(it => exOf(it.ex).group))];
 
 // ---------- pages ----------
 let route = { page: 'home' }, stack = [];
-function nav(page, p = {}) { stack.push(route); route = { page, ...p }; draw(true); }
-function back() { route = stack.pop() || { page: 'home' }; draw(true); }
-function tab(page) { stack = []; route = { page }; draw(true); }
-function draw(anim = false) {
+function nav(page, p = {}) { stack.push(route); route = { page, ...p }; draw('push'); }
+function back() { route = stack.pop() || { page: 'home' }; draw('back'); }
+function tab(page) { const same = route.page === page; stack = []; route = { page }; draw(same ? 'tab' : 'tab', true); }
+function draw(anim = false, tabbed = false) {
   const v = $('view'), top = v.scrollTop;
   v.innerHTML = (PAGES[route.page] || PAGES.home)();
-  if (anim) { v.scrollTop = 0; v.classList.remove('in'); void v.offsetWidth; v.classList.add('in'); } else v.scrollTop = top;
+  if (anim) {
+    v.scrollTop = 0; v.classList.remove('in-push', 'in-back', 'in-tab'); void v.offsetWidth; v.classList.add('in-' + (anim === true ? 'tab' : anim));
+    [...v.querySelectorAll('.head, .hero, .card, .row, .stat, .sec, .btns, .scroller, .search, .big-btn.full')].slice(0, 22).forEach((el, i) => { el.style.setProperty('--i', i); el.classList.add('st'); });
+    countUp(v);
+  } else v.scrollTop = top;
+  $('tabs').hidden = route.page === 'build'; // putting a day together: its own Start bar at the bottom, no tab bar under it
   const cur = route.page === 'plan' ? 'days' : route.page === 'build' ? 'home' : route.page === 'exercise' ? 'library' : route.page;
-  $('tabs').innerHTML = TABS.map(([id, label, icon]) => `<button class="${id === cur ? 'on' : ''}" data-act="tab" data-id="${id}" aria-label="${label}">${icon}${label}</button>`).join('');
+  $('tabs').innerHTML = TABS.map(([id, label, icon]) => `<button class="${id === cur ? 'on' : ''}${id === cur && tabbed ? ' bump' : ''}" data-act="tab" data-id="${id}" aria-label="${label}">${icon}${label}</button>`).join('');
   const a = S.active;
   $('resume').innerHTML = a && route.page !== 'build' ? `<div class="resume"><div class="w"><b>${esc(a.name)}</b><span>Training bezig · ${a.items.reduce((n, it) => n + it.log.length, 0)} sets · ${Math.max(1, Math.round((Date.now() - a.started) / 60000))} min</span></div><button data-act="openWo">Ga verder</button></div>` : '';
   if (route.page === 'library') libList();
+}
+function countUp(root) { // dot-matrix numbers count up from 0 when a page opens
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const els = [...root.querySelectorAll('.cnt')]; if (!els.length) return;
+  const t0 = performance.now(), D = 750;
+  const step = now => { const k = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - k, 3);
+    for (const el of els) { const v = Number(el.dataset.v) * e, dec = Number(el.dataset.dec); el.innerHTML = dots(dec ? v.toFixed(dec).replace('.', ',') : String(Math.round(v)), Number(el.dataset.cell)); }
+    if (k < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
 }
 const head = (title, sub = '', right = '', backBtn = false) => `<div class="head">${backBtn ? `<button class="icon-btn" data-act="back" aria-label="Terug">${IC.back}</button>` : ''}<div class="w"><h1>${esc(title)}</h1>${sub ? `<p>${sub}</p>` : ''}</div>${right}</div>`;
 const groupChips = groups => groups.map(g => `<span class="chip">${GROUPS[g]}</span>`).join('');
@@ -206,17 +226,19 @@ const PAGES = {
       const a = S.active, done = a.items.reduce((n, it) => n + it.log.length, 0), all = a.items.reduce((n, it) => n + it.sets, 0);
       hero = `<div class="hero">${heroDeco()}<div class="k">Training bezig</div><h3>${esc(a.name)}</h3><p>${done} van ${all} sets · ${Math.max(1, Math.round((Date.now() - a.started) / 60000))} min</p><button class="big-btn" data-act="openWo">${IC.play}Ga verder</button></div>`;
     } else {
-      const days = S.plans.slice(0, 6).map(p => `<button class="chip" data-act="start" data-id="${p.id}">${esc(p.name)}</button>`).join('');
-      hero = `<div class="hero">${heroDeco()}<div class="k">Vandaag</div><h3>Wat train je?</h3><p>Tik op je spieren en kies je oefeningen. De app zegt hoeveel sets, herhalingen en rust.</p>
+      const days = S.plans.slice(0, 6).map(p => `<button class="chip play" data-act="start" data-id="${p.id}">${IC.play.replace('width="18" height="18"', 'width="11" height="11"')}${esc(p.name)}</button>`).join(''), n = S.draft.items.length;
+      hero = n ? `<div class="hero">${heroDeco()}<div class="k">Klaar om te gaan</div><h3>${esc(draftName())}</h3><p>${n} oefening${n > 1 ? 'en' : ''} · ${S.draft.items.reduce((m, it) => m + it.sets, 0)} sets · ± ${planMins(S.draft)} min</p>
+          <div class="hero-btns"><button class="big-btn" data-act="startDraft">${IC.play}Start training</button><button class="big-btn soft" data-act="build">Aanpassen</button></div></div>`
+        : `<div class="hero">${heroDeco()}<div class="k">Vandaag</div><h3>Wat train je?</h3><p>Tik op je spieren en kies je oefeningen. De app zegt hoeveel sets, herhalingen en rust.</p>
         <button class="big-btn" data-act="build">${IC.plus}Stel je training samen</button>
-        ${days ? `<p style="margin:14px 0 8px">Of start een dag van jou:</p><div class="chips">${days}</div>` : ''}</div>`;
+        ${days ? `<p style="margin:16px 0 8px">Of start een dag van jou:</p><div class="chips">${days}</div>` : ''}</div>`;
     }
     const tired = fatigue(), sorted = Object.entries(tired).sort((a, z) => z[1].left - a[1].left);
-    const list = sorted.length ? sorted.map(([g, t]) => `<div class="rec"><i style="background:${tiredColour(t.frac)}"></i><b>${GROUPS[g]}</b><span>nog ${hoursTxt(t.left)}</span></div>`).join('')
-      : '<p class="fresh">Alles is hersteld. Klaar om te trainen.</p>';
+    const list = sorted.length ? sorted.map(([g, t]) => `<div class="rec"><i style="background:${tiredColour(t.frac)};color:${tiredColour(t.frac)}"></i><b>${GROUPS[g]}</b><span>nog ${hoursTxt(t.left)}</span></div>`).join('')
+      : '<p class="fresh">Alles is hersteld.<br>Klaar om te trainen.</p>';
     const wk = monday(Date.now()), trained = new Set(S.history.map(s => dayKey(s.started))), todayKey = dayKey(Date.now());
     const week = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'].map((d, i) => { const ts = wk + i * DAY, k = dayKey(ts), date = new Date(ts).getDate();
-      return `<div class="${trained.has(k) ? 'done' : ''} ${k === todayKey ? 'today' : ''}"><i>${trained.has(k) ? '✓' : date}</i>${d}</div>`; }).join('');
+      return `<div class="${trained.has(k) ? 'done' : ''} ${k === todayKey ? 'today' : ''}" style="--i:${i}"><i>${trained.has(k) ? '✓' : date}</i>${d}</div>`; }).join('');
     const thisWeek = S.history.filter(s => s.started >= wk), wSets = thisWeek.reduce((n, s) => n + setsOf(s), 0), wVol = thisWeek.reduce((n, s) => n + volOf(s), 0);
     const volStr = wVol >= 10000 ? (wVol / 1000).toFixed(1).replace('.', ',') : String(Math.round(wVol));
     const rec = records().events.slice(-3).reverse().map(e => `<button class="row" data-act="exercise" data-id="${e.ex}"><span class="ico" style="background:rgba(255,217,138,.18);color:var(--gold)">★</span><div class="w"><b>${esc(exOf(e.ex).name)}</b><span>${dateTxt(e.at)}</span></div><span class="badge gold">${kgTxt(e.kg)} × ${e.reps}</span></button>`).join('');
@@ -224,14 +246,15 @@ const PAGES = {
       ${hero}
       ${standalone() ? '' : `<button class="row" data-act="install" style="margin-top:12px"><span class="ico">${IC.share}</span><div class="w"><b>Zet me op je beginscherm</b><span>Dan is het een echte app, ook zonder internet</span></div><span class="chev">›</span></button>`}
       <div class="sec"><h2>Je spieren</h2><button data-act="recoverSettings">Hersteltijden</button></div>
-      <div class="card bodycard">${bodySvg({ tired })}<div class="recs">${list}</div>
+      <div class="card bodycard"><div class="bodyrow">${bodyHtml({ tired })}<div class="bodyside"><div class="recs">${list}</div>
+        <button class="flipbtn" data-act="flipBody"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3L20 9M20 4v5h-5M20 12a8 8 0 0 1-14 5.3L4 15M4 20v-5h5"/></svg><span id="flipTxt">${flipLabel()}</span></button></div></div>
         <div class="legend"><span><i style="background:#ff4d5e"></i>net getraind</span><span><i style="background:#ffd166"></i>bijna hersteld</span><span><i style="background:rgba(255,255,255,.3)"></i>hersteld</span></div></div>
       <div class="sec"><h2>Deze week</h2></div>
       <div class="card week">${week}</div>
       <div class="stats" style="margin-top:8px">
-        <div class="stat">${dots(String(thisWeek.length), 4.6)}<span>trainingen</span></div>
-        <div class="stat">${dots(String(wSets), 4.6)}<span>sets</span></div>
-        <div class="stat">${dots(volStr, volStr.length >= 4 ? 3.4 : 4.6)}<span>${wVol >= 10000 ? 'ton getild' : 'kg getild'}</span></div>
+        <div class="stat">${dotsCount(thisWeek.length, 4.6)}<span>trainingen</span></div>
+        <div class="stat">${dotsCount(wSets, 4.6)}<span>sets</span></div>
+        <div class="stat">${wVol >= 10000 ? dotsCount(wVol / 1000, 4.6, 1) : dotsCount(wVol, volStr.length >= 4 ? 3.4 : 4.6)}<span>${wVol >= 10000 ? 'ton getild' : 'kg getild'}</span></div>
       </div>
       ${S.history.length ? `<div class="sec"><h2>Laatste trainingen</h2><button data-act="tab" data-id="progress">Alles</button></div><div class="list">${S.history.slice(0, 3).map(sessionRow).join('')}</div>` : ''}
       ${rec ? `<div class="sec"><h2>Nieuwe records</h2></div><div class="list">${rec}</div>` : ''}`;
@@ -242,16 +265,16 @@ const PAGES = {
     const tired = fatigue(), picked = new Set(S.draft.groups || []), draft = S.draft.items;
     const lists = [...picked].map(g => { const t = tired[g];
       const rows = ALL().filter(e => e.group === g).map(e => { const inDay = draft.some(it => it.ex === e.id), d = defaultItem(e.id);
-        return `<button class="row" data-act="toggleDraft" data-id="${e.id}"><div class="w"><b>${esc(e.name)}</b><span>${EQUIP[e.equip] || ''} · ${itemTxt(e, d)} · rust ${restTxt(d.rest)}</span></div><span class="addmark ${inDay ? 'on' : ''}">${inDay ? '✓' : '+'}</span></button>`; }).join('');
+        return `<button class="row" data-act="toggleDraft" data-id="${e.id}"><div class="w"><b>${esc(e.name)}</b><span>${EQUIP[e.equip] || ''} · ${itemTxt(e, d)} · rust ${restTxt(d.rest)}</span></div><span class="addmark ${inDay ? 'on' : ''} ${popId === e.id ? 'pop' : ''}">${inDay ? '✓' : '+'}</span></button>`; }).join('');
       return `<div class="sec"><h2>${GROUPS[g]}</h2>${t ? `<span class="warn">nog ${hoursTxt(t.left)} herstel</span>` : '<span class="okmark">hersteld</span>'}</div><div class="list">${rows}</div>`; }).join('');
     const mine = draft.map((it, i) => { const ex = exOf(it.ex);
       return `<div class="row"><span class="ico">${i + 1}</span><button class="w" data-act="editDraft" data-i="${i}"><b>${esc(ex.name)}</b><span>${itemTxt(ex, it)} · rust ${restTxt(it.rest)}</span></button><button class="x" data-act="dropDraft" data-i="${i}" aria-label="Weghalen">${IC.x}</button></div>`; }).join('');
     return `${head('Je training', 'Tik op de spieren die je wilt trainen', '', true)}
-      <div class="card bodycard pick">${bodySvg({ tired, picked, clickable: true })}</div>
+      <div class="card bodycard pick">${bodyHtml({ tired, picked, clickable: true })}<button class="flipbtn center" data-act="flipBody"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3L20 9M20 4v5h-5M20 12a8 8 0 0 1-14 5.3L4 15M4 20v-5h5"/></svg><span id="flipTxt">${flipLabel()}: draai om</span></button></div>
       <div class="scroller" style="margin-top:10px">${Object.entries(GROUPS).map(([k, l]) => `<button class="chip ${picked.has(k) ? 'on' : ''}" data-act="pickGroup" data-id="${k}">${l}</button>`).join('')}</div>
       ${draft.length ? `<div class="sec"><h2>Jouw training · ${draft.length}</h2><button data-act="clearDraft">Leegmaken</button></div><div class="list">${mine}</div>` : ''}
       ${lists || '<div class="card empty" style="margin-top:14px">Tik op een spier op het lichaam, of kies hierboven een spiergroep. Dan zie je de oefeningen.</div>'}
-      <div class="dock"><button class="big-btn soft" data-act="saveDraft" ${draft.length ? '' : 'disabled'}>Bewaar als dag</button><button class="big-btn" data-act="startDraft" ${draft.length ? '' : 'disabled'}>${IC.play}Start${draft.length ? ` · ${draft.length}` : ''}</button></div>`;
+      <div class="dock"><button class="big-btn soft" data-act="saveDraft" ${draft.length ? '' : 'disabled'} aria-label="Bewaar als dag">Bewaar</button><button class="big-btn" data-act="startDraft" ${draft.length ? '' : 'disabled'}>${IC.play}${draft.length ? `Start training · ${draft.length}` : 'Kies eerst oefeningen'}</button></div>`;
   },
 
   days() {
@@ -310,9 +333,9 @@ const PAGES = {
     const recs = Object.entries(best).sort((a, z) => z[1].at - a[1].at).slice(0, 10).map(([id, b]) => `<button class="row" data-act="exercise" data-id="${id}"><div class="w"><b>${esc(exOf(id).name)}</b><span>${dateTxt(b.at)} · max 1× ± ${kgTxt(Math.round(e1rm(b.kg, b.reps)))} kg</span></div><span class="badge gold">${kgTxt(b.kg)} × ${b.reps}</span></button>`).join('');
     return `${head('Voortgang', total ? `${total} trainingen sinds ${dateTxt(Math.min(...S.history.map(s => s.started)))}` : 'Train en je ziet hier hoe je sterker wordt')}
       <div class="stats">
-        <div class="stat">${dots(String(total), 4.6)}<span>trainingen</span></div>
-        <div class="stat">${dots((vol / 1000).toFixed(1).replace('.', ','), 4.6)}<span>ton getild</span></div>
-        <div class="stat">${dots(String(weekStreak()), 4.6)}<span>weken op rij</span></div>
+        <div class="stat">${dotsCount(total, 4.6)}<span>trainingen</span></div>
+        <div class="stat">${dotsCount(vol / 1000, 4.6, 1)}<span>ton getild</span></div>
+        <div class="stat">${dotsCount(weekStreak(), 4.6)}<span>weken op rij</span></div>
       </div>
       <div class="card chart" style="margin-top:8px"><div class="t"><b>Sets per spier</b><span>deze week · 10 tot 20 is goed</span></div><div class="gbars">${bars}</div></div>
       <div class="card chart" style="margin-top:8px"><div class="t"><b>Per week</b><span>kg getild</span></div>${weekChart()}</div>
@@ -324,9 +347,9 @@ const PAGES = {
 };
 const sessionRow = s => `<button class="row" data-act="session" data-id="${s.id}"><span class="ico">${new Date(s.started).getDate()}</span><div class="w"><b>${esc(s.name)}</b><span>${dateTxt(s.started)} · ${setsOf(s)} sets · ${minsOf(s)} min</span></div><span class="badge">${volTxt(volOf(s))}</span></button>`;
 const heroDeco = () => `<svg class="deco" width="220" height="220" viewBox="0 0 220 220" aria-hidden="true">${Array.from({ length: 22 }, (_, i) => { const a = -Math.PI * 0.95 + i * 0.075, r1 = 150, r2 = i % 5 === 0 ? 132 : 140, cx = 220, cy = 220;
-  return `<line x1="${cx + r1 * Math.cos(a)}" y1="${cy + r1 * Math.sin(a)}" x2="${cx + r2 * Math.cos(a)}" y2="${cy + r2 * Math.sin(a)}" stroke="#fff" stroke-opacity="${i % 5 === 0 ? .8 : .45}" stroke-width="${i % 5 === 0 ? 2 : 1.3}" stroke-linecap="round"/>`; }).join('')}<circle cx="${220 + 150 * Math.cos(-Math.PI * 0.95 + 21 * 0.075)}" cy="${220 + 150 * Math.sin(-Math.PI * 0.95 + 21 * 0.075)}" r="5" fill="#fff"/></svg>`;
+  return `<line class="tk" style="--i:${i}" x1="${cx + r1 * Math.cos(a)}" y1="${cy + r1 * Math.sin(a)}" x2="${cx + r2 * Math.cos(a)}" y2="${cy + r2 * Math.sin(a)}" stroke="#fff" stroke-width="${i % 5 === 0 ? 2 : 1.3}" stroke-linecap="round"/>`; }).join('')}<circle cx="${220 + 150 * Math.cos(-Math.PI * 0.95 + 21 * 0.075)}" cy="${220 + 150 * Math.sin(-Math.PI * 0.95 + 21 * 0.075)}" r="5" fill="#fff"/></svg>`;
 
-let libQ = '', libG = '';
+let libQ = '', libG = '', popId = null;
 function libList() {
   const box = $('libList'); if (!box) return;
   const { best } = records(), q = libQ.trim().toLowerCase();
@@ -344,7 +367,7 @@ function weekChart() {
   const max = Math.max(1, ...vals), W = 320, Hh = 150, bw = 26, gap = (W - bw * 8) / 7;
   const bars = vals.map((v, i) => { const h = v ? Math.max(6, (v / max) * 104) : 4, x = i * (bw + gap), y = 116 - h, now = i === 7;
     const label = new Date(weeks[i]).getDate() + '/' + (new Date(weeks[i]).getMonth() + 1);
-    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw}" height="${h.toFixed(1)}" rx="8" fill="#fff" fill-opacity="${now ? 0.95 : v ? 0.42 : 0.12}"/>
+    return `<rect class="bar" style="--i:${i}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw}" height="${h.toFixed(1)}" rx="8" fill="#fff" fill-opacity="${now ? 0.95 : v ? 0.42 : 0.12}"/>
       ${v && (now || v === max) ? `<text x="${(x + bw / 2).toFixed(1)}" y="${(y - 6).toFixed(1)}" text-anchor="middle" font-size="10.5" font-weight="700" fill="#fff">${v >= 1000 ? (v / 1000).toFixed(1).replace('.', ',') + 't' : Math.round(v)}</text>` : ''}
       <text x="${(x + bw / 2).toFixed(1)}" y="136" text-anchor="middle" font-size="10" fill="#fff" fill-opacity=".5">${label}</text>`; }).join('');
   return `<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Kilo’s per week, de laatste 8 weken">${bars}</svg>`;
@@ -356,7 +379,7 @@ function calendar() {
   let cells = '';
   for (let w = 0; w < 12; w++) for (let d = 0; d < 7; d++) {
     const ts = start + (w * 7 + d) * DAY, k = dayKey(ts), v = per[k], future = ts > Date.now();
-    cells += `<rect x="${w * (c + g)}" y="${d * (c + g)}" width="${c}" height="${c}" rx="6" fill="#fff" fill-opacity="${future ? 0.03 : v ? 0.35 + 0.6 * v / max : 0.09}" ${k === today ? 'stroke="#fff" stroke-width="1.6"' : ''}/>`;
+    cells += `<rect class="cell" style="--i:${w}" x="${w * (c + g)}" y="${d * (c + g)}" width="${c}" height="${c}" rx="6" fill="#fff" fill-opacity="${future ? 0.03 : v ? 0.35 + 0.6 * v / max : 0.09}" ${k === today ? 'stroke="#fff" stroke-width="1.6"' : ''}/>`;
   }
   const months = [...Array(12)].map((_, w) => { const d = new Date(start + w * 7 * DAY); return d.getDate() <= 7 ? `<text x="${w * (c + g)}" y="${Hh - 2}" font-size="10" fill="#fff" fill-opacity=".5">${d.toLocaleDateString('nl-NL', { month: 'short' }).replace('.', '')}</text>` : ''; }).join('');
   return `<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Dagen dat je trainde, de laatste 12 weken">${cells}${months}</svg>`;
@@ -366,7 +389,7 @@ function lineChart(pts) {
   const X = i => 14 + i * ((W - 28) / Math.max(1, pts.length - 1)), Y = v => 104 - ((v - min) / span) * 84;
   const line = pts.map((p, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)} ${Y(p.kg).toFixed(1)}`).join(' ');
   return `<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Je zwaarste set per training"><defs><linearGradient id="lf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
-    <path d="${line} L${X(pts.length - 1).toFixed(1)} 114 L${X(0).toFixed(1)} 114 Z" fill="url(#lf)"/><path d="${line}" fill="none" stroke="#fff" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="${line} L${X(pts.length - 1).toFixed(1)} 114 L${X(0).toFixed(1)} 114 Z" fill="url(#lf)"/><path class="draw" pathLength="1" d="${line}" fill="none" stroke="#fff" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
     ${pts.map((p, i) => `<circle cx="${X(i).toFixed(1)}" cy="${Y(p.kg).toFixed(1)}" r="${i === pts.length - 1 ? 5 : 3}" fill="#fff"/>`).join('')}
     <text x="${X(pts.length - 1).toFixed(1)}" y="${(Y(pts[pts.length - 1].kg) - 10).toFixed(1)}" text-anchor="end" font-size="12" font-weight="700" fill="#fff">${kgTxt(pts[pts.length - 1].kg)}</text>
     <text x="14" y="134" font-size="10" fill="#fff" fill-opacity=".5">${dateTxt(pts[0].at)}</text><text x="${W - 14}" y="134" text-anchor="end" font-size="10" fill="#fff" fill-opacity=".5">${dateTxt(pts[pts.length - 1].at)}</text></svg>`;
@@ -465,7 +488,7 @@ function settingsSheet() {
     <div class="btns two" style="margin-top:0"><button class="big-btn soft" id="sCopy">Kopieer back-up</button><button class="big-btn soft" id="sPaste">Zet terug</button></div>
     <div id="sBox"></div>
     <div class="btns"><button class="big-btn danger full" id="sReset">Alles wissen</button></div>
-    <p class="note">De look is geïnspireerd op het FORM strength training app-concept van Sujon Hossain. De rust- en hersteltijden zijn een advies, geen medische regel: luister ook naar je lichaam.</p>`, sh => {
+    <p class="note">Versie 4 · 27 oktober. De look is geïnspireerd op het FORM strength training app-concept van Sujon Hossain. De rust- en hersteltijden zijn een advies, geen medische regel: luister ook naar je lichaam.</p>`, sh => {
     stepper(sh, S.rest, Object.fromEntries(Object.keys(KINDS).map(k => [k, [15, 15, 600, restTxt]])));
     sh.querySelector('#sRec').addEventListener('click', recoverSheet);
     const flip = (id, key) => sh.querySelector(id).addEventListener('click', e => { S[key] = !S[key]; save(); const b = e.currentTarget.querySelector('.badge'); b.textContent = S[key] ? 'Aan' : 'Uit'; b.classList.toggle('ok', S[key]); });
@@ -512,7 +535,7 @@ function startPlan(pid) { const p = S.plans.find(x => x.id === pid); if (!p) ret
 function quickStart(exId) { begin(exOf(exId).name, null, [defaultItem(exId)]); }
 const draftName = () => { const g = [...new Set(S.draft.items.map(it => exOf(it.ex).group))].map(x => GROUPS[x]); return g.length ? g.slice(0, 3).join(' & ') : 'Training'; };
 const A = () => S.active, curItem = () => A().items[Math.min(A().cur, A().items.length - 1)];
-function openWorkout() { closeSheet(); adj = null; $('appScreen').hidden = true; $('woScreen').hidden = false; drawRuler(); woRender(); keepAwake(true); }
+function openWorkout() { closeSheet(); adj = null; shownPos = 0; woSig = ''; const w = $('woScreen'); $('appScreen').hidden = true; w.hidden = false; w.classList.remove('in'); void w.offsetWidth; w.classList.add('in'); drawRuler(); woRender(); keepAwake(true); }
 function stopWorkoutScreen() { $('woScreen').hidden = true; $('appScreen').hidden = false; adj = null; keepAwake(false); }
 function woBack() { stopWorkoutScreen(); draw(); }
 
@@ -528,11 +551,21 @@ function geometry() {
   return { W, H: Hh, R, cx, cy, a0: Math.atan2(Sy - cy, Sx - cx), a1 };
 }
 const TICKS = 60;
-function drawDial() {
+let shownPos = null, glideRaf = 0;
+const targetPos = it => adj ? Math.max(0, Math.min(TICKS, TICKS / 2 + (it[adj.key] - adj.start) / adj.step)) / TICKS : (it.sets ? Math.min(1, it.log.length / it.sets) : 0);
+function glideDial() { // the knob slides to its new place and the ticks light up behind it
+  const to = targetPos(curItem()), from = shownPos ?? to;
+  cancelAnimationFrame(glideRaf);
+  if (adj || Math.abs(to - from) < 1e-4 || matchMedia('(prefers-reduced-motion: reduce)').matches) { shownPos = to; drawDial(to); return; }
+  const t0 = performance.now(), D = 650;
+  const step = now => { const k = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - k, 3); shownPos = from + (to - from) * e; drawDial(shownPos); if (k < 1) glideRaf = requestAnimationFrame(step); };
+  glideRaf = requestAnimationFrame(step);
+}
+function drawDial(posAt) {
   const g = geometry(), it = curItem(), ex = exOf(it.ex), at = (a, r) => [g.cx + r * Math.cos(a), g.cy + r * Math.sin(a)];
   if (g.W < 10) return;
   const svg = $('dial'); svg.setAttribute('viewBox', `0 0 ${g.W} ${g.H}`);
-  const pos = adj ? Math.max(0, Math.min(TICKS, TICKS / 2 + (it[adj.key] - adj.start) / adj.step)) / TICKS : (it.sets ? Math.min(1, it.log.length / it.sets) : 0);
+  const pos = posAt ?? targetPos(it);
   const ticks = [], labels = [];
   for (let i = 0; i <= TICKS; i++) {
     const a = g.a0 + (g.a1 - g.a0) * i / TICKS, major = i % 6 === 0, len = major ? 18 : 9, near = adj && Math.abs(i / TICKS - pos) < 0.0001;
@@ -583,10 +616,13 @@ function woRender() {
   $('exName').textContent = ex.name; $('exPos').textContent = `${Math.min(A().cur, A().items.length - 1) + 1}/${A().items.length}`;
   $('reps').innerHTML = dots(String(ex.type === 'cardio' ? it.sets : it.reps), 8.5); $('repsLbl').textContent = ex.type === 'cardio' ? 'Keer' : repsWord(ex);
   $('pct').innerHTML = dots(`${all ? Math.round(done / all * 100) : 0}%`, 5.5);
+  const sig = `${A().cur}|${it.kg}|${it.reps}`; if (woSig && woSig !== sig && woSig.split('|')[0] === String(A().cur)) for (const id of ['kg', 'reps']) { const el = $(id); el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
+  woSig = sig;
   document.querySelector('.weight').classList.toggle('adj', adj?.key === 'kg' || (adj?.key === 'reps' && ex.type === 'cardio'));
   document.querySelector('.reps').classList.toggle('adj', adj?.key === 'reps' && ex.type !== 'cardio');
-  drawDial(); woGoButton(); woTick();
+  glideDial(); woGoButton(); woTick();
 }
+let woSig = '';
 function woGoButton() {
   const it = curItem(), d = it.log.length, last = A().cur >= A().items.length - 1, b = $('goBtn');
   let label, kind, soft = false;
@@ -621,6 +657,7 @@ async function keepAwake(on) { try { if (on && S.awake && !lock && navigator.wak
 
 function woGo() {
   const it = curItem(), b = $('goBtn'), kind = b.dataset.kind;
+  b.classList.remove('ripple'); void b.offsetWidth; b.classList.add('ripple');
   if (S.sound) beep(0); // unlocks sound on the iPhone (it may only start after a tap)
   if (b.dataset.mode === 'adj') { adj = null; save(); woRender(); return; }
   if (kind === 'skip') { A().restEnd = 0; save(); afterRest(); return; }
@@ -646,7 +683,7 @@ function move(dir) {
   const next = A().cur + dir; if (next < 0 || next >= A().items.length) return;
   adj = null;
   const st = $('stage'); st.classList.add(dir > 0 ? 'out-l' : 'out-r');
-  setTimeout(() => { A().cur = next; save(); woRender(); st.classList.remove('out-l', 'out-r'); st.classList.add(dir > 0 ? 'out-r' : 'out-l'); void st.offsetWidth; st.classList.remove('out-l', 'out-r'); }, 160);
+  setTimeout(() => { A().cur = next; shownPos = 0; woSig = ''; save(); woRender(); st.classList.remove('out-l', 'out-r'); st.classList.add(dir > 0 ? 'out-r' : 'out-l'); void st.offsetWidth; st.classList.remove('out-l', 'out-r'); }, 160);
 }
 function woExact() { // type the exact numbers (the dial is the quick way)
   const it = curItem(), ex = exOf(it.ex), rules = rulesFor(ex), word = ex.type === 'time' ? 'Seconden' : ex.type === 'cardio' ? 'Minuten' : 'Herhalingen';
@@ -733,7 +770,11 @@ const ACT = {
   start: el => startPlan(el.dataset.id), openWo: openWorkout, quickStart: el => quickStart(el.dataset.id),
   build: () => { if (route.page !== 'build') nav('build'); },
   pickGroup: el => { const g = el.dataset.id, set = new Set(S.draft.groups || []); set.has(g) ? set.delete(g) : set.add(g); S.draft.groups = [...set]; save(); draw(); },
-  toggleDraft: el => { const id = el.dataset.id, i = S.draft.items.findIndex(it => it.ex === id); if (i >= 0) S.draft.items.splice(i, 1); else { S.draft.items.push(defaultItem(id)); toast(`${exOf(id).name} erbij`); } save(); draw(); },
+  toggleDraft: el => { const id = el.dataset.id, i = S.draft.items.findIndex(it => it.ex === id); if (i >= 0) S.draft.items.splice(i, 1); else { S.draft.items.push(defaultItem(id)); toast(`${exOf(id).name} erbij`); } popId = id; save(); draw(); popId = null; },
+  flipBody: () => { // turn away, switch sides out of sight, turn back with a little spring
+    bodyBack = !bodyBack;
+    document.querySelectorAll('.b3d').forEach(b => { const f = b.querySelector('.b3d-flip'); f.className = 'b3d-flip out';
+      setTimeout(() => { b.classList.toggle('back', bodyBack); f.className = 'b3d-flip from'; void f.offsetWidth; f.className = 'b3d-flip settle'; }, 260); }); document.querySelectorAll('#flipTxt').forEach(t => t.textContent = route.page === 'build' ? `${flipLabel()}: draai om` : flipLabel()); },
   dropDraft: el => { S.draft.items.splice(Number(el.dataset.i), 1); save(); draw(); },
   editDraft: el => itemSheet(S.draft.items, Number(el.dataset.i), refresh),
   clearDraft: () => { S.draft = { items: [], groups: [] }; save(); draw(); },
@@ -754,6 +795,17 @@ const ACT = {
   deleteExercise: el => { if (!el.dataset.sure) { el.dataset.sure = 1; el.textContent = 'Zeker weten? Tik nog een keer'; return; } S.custom = S.custom.filter(e => e.id !== route.id); save(); back(); },
   woBack, woMenu, woGo, adjKg: () => startAdjust('kg'), adjReps: () => startAdjust('reps'),
 };
+// Taps on the body are found by where your finger was: a figure that turns in 3D does not always turn a tap into a click on the iPhone.
+// On Home a tap turns it around; in "Je training" it picks the muscle under your finger.
+let downAt = null;
+document.addEventListener('pointerdown', e => { downAt = [e.clientX, e.clientY]; }, true);
+document.addEventListener('pointerup', e => {
+  if (!downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 10) return;
+  const top = document.elementFromPoint(e.clientX, e.clientY), b = top?.closest?.('.b3d') || [...document.querySelectorAll('.b3d')].find(x => { const r = x.getBoundingClientRect(); return x.offsetParent && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom; });
+  if (!b || (top && !b.contains(top) && !top.closest('.bodycard'))) return; // (a sheet or a button on top of it)
+  if (b.dataset.pick) { const g = top?.closest?.('[data-g]'); if (g) ACT.pickGroup({ dataset: { id: g.dataset.g } }); }
+  else ACT.flipBody();
+});
 document.addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (!el) return; const f = ACT[el.dataset.act]; if (f) { e.preventDefault(); f(el, e); } });
 document.addEventListener('input', e => { if (e.target.id === 'q') { libQ = e.target.value; libList(); } });
 addEventListener('resize', () => { if (S.active && !$('woScreen').hidden) woRender(); });
@@ -762,7 +814,7 @@ addEventListener('resize', () => { if (S.active && !$('woScreen').hidden) woRend
 try { navigator.storage?.persist?.(); } catch {}
 if ('serviceWorker' in navigator) {
   const had = Boolean(navigator.serviceWorker.controller);
-  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => r.update?.()).catch(() => {}));
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (had && !S.active) location.reload(); }); // a new version: show it right away
 }
 draw(true);
