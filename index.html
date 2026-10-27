@@ -114,6 +114,37 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
 .how .tip { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); color: var(--ink-2); font-size: 15px }
 .how .tip b { color: var(--gold) }
 .pr { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px }
+.advice { margin-top: 8px; font-size: 15px; color: var(--ink-2) } .advice b { color: var(--ink) }
+
+/* your body: front and back, tired muscles in red to yellow */
+.bodycard { padding: 14px 12px 12px }
+.bodycard svg.body { display: block; width: 100%; max-width: 360px; height: auto; margin: 0 auto }
+.bodycard.pick svg.body { max-width: 300px }
+.recs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; margin: 10px 4px 0 }
+.rec { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 14px }
+.rec i { flex: none; width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 8px currentColor }
+.rec b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.rec span { margin-left: auto; flex: none; color: var(--ink-2); font-size: 13px; font-variant-numeric: tabular-nums }
+.fresh { grid-column: 1 / -1; margin: 0; text-align: center; color: var(--go); font-weight: 600 }
+.legend { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px 14px; margin-top: 12px; font-size: 12px; color: var(--ink-3) }
+.legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px }
+
+/* putting a day together */
+.addmark { flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--glass-2); font-size: 18px; font-weight: 700 }
+.addmark.on { background: var(--ink); color: var(--night) }
+.warn { font-size: 13px; font-weight: 600; color: #ffb36b } .okmark { font-size: 13px; font-weight: 600; color: var(--go) }
+.row > button.w { text-align: left; min-width: 0; padding: 4px 0 }
+.x { flex: none; width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; color: var(--ink-2); background: var(--glass) }
+.dock { position: fixed; left: 0; right: 0; bottom: calc(var(--bottom) + 66px); max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1.3fr; gap: 8px; padding: 10px 18px; z-index: 4; background: linear-gradient(transparent, rgba(17,15,43,.85) 30%) }
+.dock .big-btn[disabled] { opacity: .35 }
+.view:has(.dock) { padding-bottom: calc(var(--bottom) + 170px) }
+
+/* sets per muscle this week */
+.gbars { display: grid; gap: 8px; padding: 2px 2px 6px }
+.gbar { display: grid; grid-template-columns: 118px 1fr 28px; align-items: center; gap: 10px; font-size: 13.5px }
+.gbar span { color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.gbar i { height: 8px; border-radius: 4px; background: var(--glass-2); overflow: hidden } .gbar s { display: block; height: 100%; border-radius: 4px; background: var(--ink) }
+.gbar b { text-align: right; font-variant-numeric: tabular-nums }
 
 /* ---------- the workout (FORM look) ---------- */
 .wo { background: transparent; z-index: 6 }
@@ -140,6 +171,9 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
 .set.up { color: var(--ink-3) } .set.up i { background: transparent; box-shadow: inset 0 0 0 1.4px currentColor }
 .set.ok { color: var(--ink-2) }
 .set.now { color: var(--ink); font-weight: 700 } .set.now i { width: 8px; height: 8px; box-shadow: 0 0 10px #fff }
+.weight.adj, .reps.adj { background: rgba(255,255,255,.12); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.55) }
+.adjhint { position: absolute; font-size: 16px; font-weight: 600; line-height: 1.3; pointer-events: none }
+.adjhint small { font-size: 13px; font-weight: 500; color: var(--ink-3) }
 .go { position: absolute; right: 20px; bottom: 14px; display: flex; align-items: center; gap: 10px }
 .go b { font-size: 13px; font-weight: 600; color: var(--ink-2); text-align: right; line-height: 1.15 }
 .go button { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: var(--night); box-shadow: 0 8px 24px rgba(10,8,40,.45), 0 0 0 6px rgba(255,255,255,.12); transition: transform .12s }
@@ -199,11 +233,11 @@ textarea.field { height: 120px; padding: 12px 16px; font-size: 13px; font-weight
     <div class="stage" id="stage">
       <svg class="dial" id="dial" aria-hidden="true"></svg>
       <div id="sets"></div>
-      <button class="weight" data-act="woAdjust" aria-label="Gewicht en herhalingen aanpassen">
+      <button class="weight" data-act="adjKg" aria-label="Gewicht aanpassen met de boog">
         <span class="r"><span id="kg"></span><span class="unit" id="kgUnit">kg</span></span>
         <span class="name"><em id="exName">Bench Press</em><small id="exPos">1/5</small></span>
       </button>
-      <button class="reps" data-act="woAdjust" aria-label="Herhalingen aanpassen"><span id="reps"></span><span id="repsLbl">Reps</span></button>
+      <button class="reps" data-act="adjReps" aria-label="Herhalingen aanpassen met de boog"><span id="reps"></span><span id="repsLbl">Reps</span></button>
       <div class="pct"><span id="pct"></span><span>Voltooid</span></div>
       <div class="go"><b id="goLabel"></b><button id="goBtn" data-act="woGo"></button></div>
     </div>

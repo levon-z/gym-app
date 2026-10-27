@@ -89,14 +89,28 @@ const LIBRARY = [
   ['burpee', 'Burpees', 'cardio', 'body', 'Zak, spring naar een push-up, terug en spring omhoog.', 'Zwaar: begin met 5.'],
 ].map(([id, name, group, equip, how, tip, type]) => ({ id, name, group, equip, how, tip, type }));
 
-// the example plans: a starting point, everything can be changed in the app
-const item = (ex, sets, reps, kg, rest = 90) => ({ ex, sets, reps, kg, rest });
-const EXAMPLE_PLANS = () => [
-  { id: 'push', name: 'Push day', items: [item('bench', 4, 8, 60, 120), item('incdb', 3, 10, 22), item('ohp', 3, 8, 35), item('lateral', 3, 12, 8, 60), item('pushdown', 3, 12, 25, 60)] },
-  { id: 'pull', name: 'Pull day', items: [item('deadlift', 3, 5, 90, 150), item('pullup', 3, 8, 0), item('bbrow', 3, 8, 55), item('facepull', 3, 15, 20, 60), item('hammer', 3, 10, 14, 60)] },
-  { id: 'legs', name: 'Leg day', items: [item('squat', 4, 6, 70, 150), item('rdl', 3, 8, 60, 120), item('legpress', 3, 10, 120), item('legcurl', 3, 12, 35, 60), item('calf', 4, 12, 50, 45)] },
-  { id: 'upper', name: 'Upper body', items: [item('bench', 3, 8, 60, 120), item('latpull', 3, 10, 50), item('dbpress', 3, 10, 18), item('cablerow', 3, 10, 45), item('dbcurl', 2, 12, 12, 60), item('ohext', 2, 12, 20, 60)] },
-  { id: 'lower', name: 'Lower body', items: [item('squat', 3, 8, 65, 150), item('hipthrust', 3, 10, 80), item('bulgarian', 3, 10, 14), item('seatcurl', 3, 12, 35, 60), item('plank', 3, 45, 0, 60)] },
-  { id: 'full', name: 'Full body', items: [item('goblet', 3, 10, 20), item('dbbench', 3, 10, 22), item('dbrow', 3, 10, 24), item('dbpress', 3, 10, 16), item('plank', 3, 40, 0, 60)] },
-  { id: 'arms', name: 'Armen & buik', items: [item('bbcurl', 3, 10, 30, 60), item('skull', 3, 10, 25, 60), item('hammer', 3, 12, 14, 60), item('pushdown', 3, 12, 25, 60), item('hangleg', 3, 12, 0, 60), item('cablecrunch', 3, 15, 30, 60)] },
-];
+// What the app advises per kind of exercise (all of it can be changed in Settings).
+// Heavy: big barbell lifts with long rests; iso: one joint, small muscles; core; cardio; everything else: compound.
+const HEAVY = new Set(['bench', 'incbench', 'decbench', 'deadlift', 'squat', 'frontsquat', 'ohp', 'rackpull', 'sumo', 'rdl', 'bbrow', 'cgbench', 'hack']);
+const ISO = new Set(['dbfly', 'cablecross', 'lowfly', 'pecdeck', 'lateral', 'cablelat', 'frontraise', 'reardelt', 'facepull', 'shrug', 'uprow', 'sapull',
+  'bbcurl', 'dbcurl', 'hammer', 'preacher', 'inccurl', 'cablecurl', 'conc', 'pushdown', 'ohext', 'skull', 'kickback',
+  'legext', 'legcurl', 'seatcurl', 'glutekick', 'abduct', 'calf', 'seatcalf', 'lpcalf', 'backext']);
+const kindOf = ex => ex.type === 'cardio' || ex.group === 'cardio' ? 'cardio' : ex.group === 'core' ? 'core' : HEAVY.has(ex.id) ? 'heavy' : ISO.has(ex.id) ? 'iso' : 'compound';
+const KINDS = {
+  heavy: { label: 'Zware basisoefeningen', sub: 'squat, deadlift, bench press', rest: 150, sets: 4, reps: 6 },
+  compound: { label: 'Andere oefeningen', sub: 'rows, presses, lunges, machines', rest: 120, sets: 3, reps: 10 },
+  iso: { label: 'Kleine spieren', sub: 'curls, raises, pushdowns', rest: 75, sets: 3, reps: 12 },
+  core: { label: 'Buik', sub: 'crunches, leg raises, planks', rest: 45, sets: 3, reps: 15 },
+  cardio: { label: 'Cardio', sub: 'loopband, fiets, roeien', rest: 60, sets: 1, reps: 15 },
+};
+// hours until a muscle group has recovered after a full workout for it (6 sets or more; fewer sets: shorter)
+const RECOVERY = { chest: 60, back: 72, shoulders: 48, biceps: 48, triceps: 48, quads: 72, hams: 72, calves: 48, core: 36, cardio: 24 };
+// big lifts work other muscles too: they count for half
+const SECONDARY = {
+  bench: ['triceps', 'shoulders'], incbench: ['triceps', 'shoulders'], decbench: ['triceps'], dbbench: ['triceps', 'shoulders'], incdb: ['triceps', 'shoulders'],
+  chestpress: ['triceps'], pushup: ['triceps', 'shoulders'], dips: ['triceps', 'shoulders'], cgbench: ['chest'], diamond: ['chest'],
+  ohp: ['triceps'], dbpress: ['triceps'], arnold: ['triceps'], deadlift: ['hams', 'quads'], rackpull: ['hams'], sumo: ['quads', 'back'], rdl: ['back'],
+  pullup: ['biceps'], chinup: ['biceps'], latpull: ['biceps'], bbrow: ['biceps'], dbrow: ['biceps'], cablerow: ['biceps'], tbar: ['biceps'], csrow: ['biceps'],
+  squat: ['hams'], frontsquat: ['core'], legpress: ['hams'], hack: ['hams'], bulgarian: ['hams'], lunge: ['hams'], goblet: ['hams'], stepup: ['hams'], hipthrust: ['quads'], goodmorning: ['back'],
+};
+const EXAMPLE_IDS = new Set(['push', 'pull', 'legs', 'upper', 'lower', 'full', 'arms']); // the old ready-made plans (removed: you make your own days now)
