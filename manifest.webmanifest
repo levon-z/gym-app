@@ -1,0 +1,15 @@
+{
+  "name": "Gym",
+  "short_name": "Gym",
+  "description": "Weight, reps, sets and a rest timer for every exercise.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#110f2b",
+  "theme_color": "#5b55d6",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
